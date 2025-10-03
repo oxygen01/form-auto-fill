@@ -10,7 +10,7 @@ function Popup() {
   const [filling, setFilling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const refreshFieldCount = async () => {
+  const refreshFieldCount = async (retryCount = 0) => {
     setRefreshing(true);
 
     try {
@@ -21,30 +21,49 @@ function Popup() {
         return;
       }
 
-      // Send message and handle response with promise
+      // Special handling for chrome:// pages
+      if (tab.url?.startsWith('chrome://') || tab.url?.startsWith('chrome-extension://')) {
+        console.log('Cannot access chrome:// or extension pages');
+        setFieldCount(0);
+        setRefreshing(false);
+        return;
+      }
+
+      // Send message and handle response
       chrome.tabs.sendMessage(
         tab.id,
         { type: 'GET_FORM_COUNT' },
         (response) => {
-          // Clear any errors
           const error = chrome.runtime.lastError;
 
           if (error) {
-            console.error('Content script not responding:', error.message);
-            setFieldCount(0);
+            console.warn('Content script not responding:', error.message);
+
+            // Retry up to 2 times with delay (content script might still be loading)
+            if (retryCount < 2) {
+              console.log(`Retrying... (${retryCount + 1}/2)`);
+              setTimeout(() => {
+                refreshFieldCount(retryCount + 1);
+              }, 500);
+            } else {
+              console.error('Content script failed to load after retries');
+              setFieldCount(0);
+              setRefreshing(false);
+            }
           } else if (response?.count !== undefined) {
             console.log('Form fields detected:', response.count);
             setFieldCount(response.count);
+            setRefreshing(false);
           } else {
             console.warn('No valid response from content script');
             setFieldCount(0);
+            setRefreshing(false);
           }
-
-          setTimeout(() => setRefreshing(false), 300);
         }
       );
     } catch (error) {
       console.error('Error refreshing field count:', error);
+      setFieldCount(0);
       setRefreshing(false);
     }
   };
@@ -125,7 +144,7 @@ function Popup() {
             <h1 className="text-lg font-semibold">Form Auto-Fill</h1>
           </div>
           <button
-            onClick={refreshFieldCount}
+            onClick={() => refreshFieldCount(0)}
             disabled={refreshing}
             className="p-1.5 hover:bg-blue-800 rounded-lg transition-colors disabled:opacity-50"
             title="Refresh form detection"

@@ -1,4 +1,5 @@
 import { Message } from '@/shared/types';
+import { DEFAULT_OPTIONS, STORAGE_KEYS } from '@/shared/constants';
 
 // Listen for messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message: Message, _sender, _sendResponse) => {
@@ -57,13 +58,10 @@ createContextMenu();
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'fill-form' && tab?.id) {
     // Get current options from storage and send fill command
-    chrome.storage.sync.get('options', (result) => {
-      const options = result.options || {
-        respectValidation: true,
-        fillOptionalFields: true,
-        locale: 'en_US',
-        animationSpeed: 'fast'
-      };
+    chrome.storage.sync.get(STORAGE_KEYS.OPTIONS, (result) => {
+      const options = result[STORAGE_KEYS.OPTIONS] || DEFAULT_OPTIONS;
+
+      console.log('Context menu fill with options:', options);
 
       chrome.tabs.sendMessage(tab.id!, {
         type: 'FILL_FORM',

@@ -6,25 +6,34 @@ import { FIELD_PATTERNS } from '@/shared/constants';
 let isInitialized = false;
 
 function init() {
-  if (isInitialized) {
-    console.log('⚠️ Content script already initialized, skipping');
-    return;
+  try {
+    if (isInitialized) {
+      console.log('⚠️ Content script already initialized, skipping');
+      return;
+    }
+
+    isInitialized = true;
+
+    // Verify Faker is loaded
+    console.log('✅ Form Auto-Fill content script loaded');
+    console.log('✅ Faker library loaded:', !!faker);
+    console.log('✅ Available locales:', Object.keys(allFakers).length);
+    console.log('✅ Page URL:', window.location.href);
+    console.log('✅ Document ready state:', document.readyState);
+
+    // Set up message listener
+    setupMessageListener();
+  } catch (error) {
+    console.error('❌ Error initializing content script:', error);
   }
-
-  isInitialized = true;
-
-  // Verify Faker is loaded
-  console.log('✅ Form Auto-Fill content script loaded');
-  console.log('✅ Faker library loaded:', !!faker);
-  console.log('✅ Available locales:', Object.keys(allFakers).length);
-  console.log('✅ Page URL:', window.location.href);
-
-  // Set up message listener
-  setupMessageListener();
 }
 
 // Initialize immediately (top-level execution for direct script loading)
-init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 
 function setupMessageListener() {
   // Listen for messages from popup
