@@ -140,7 +140,11 @@ function generateData(field: FormField, fakerInstance: Faker = faker): string {
   try {
     // Handle specific input types first
     if (field.type === 'email') {
-      return fakerInstance.internet.email().toLowerCase();
+      // Use RFC 2606 reserved domains for safety
+      const safeDomains = ['example.com', 'example.net', 'example.org', 'test.com', 'localhost.localdomain'];
+      const username = fakerInstance.internet.userName().toLowerCase();
+      const domain = fakerInstance.helpers.arrayElement(safeDomains);
+      return `${username}@${domain}`;
     }
 
     if (field.type === 'tel') {
@@ -193,7 +197,11 @@ function generateData(field: FormField, fakerInstance: Faker = faker): string {
     // Handle classified field types
     switch (fieldType) {
       case 'email':
-        return fakerInstance.internet.email().toLowerCase();
+        // Use RFC 2606 reserved domains for safety
+        const safeDomains = ['example.com', 'example.net', 'example.org', 'test.com', 'localhost.localdomain'];
+        const username = fakerInstance.internet.userName().toLowerCase();
+        const domain = fakerInstance.helpers.arrayElement(safeDomains);
+        return `${username}@${domain}`;
 
       case 'firstName':
         return fakerInstance.person.firstName();
