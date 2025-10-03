@@ -58,7 +58,7 @@ export const FIELD_PATTERNS = {
   address: /address|street|direccion/i,
   city: /city|ciudad/i,
   state: /state|province|provincia/i,
-  zip: /zip|postal|codigo.*postal/i,
+  zip: /zip|postal.*code|post.*code|postcode|plz|codigo.*postal|cep|cap/i,
   country: /country|pais/i,
   company: /company|organization|empresa/i,
   username: /user.*name|login/i,

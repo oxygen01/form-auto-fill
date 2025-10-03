@@ -156,6 +156,19 @@ function generateData(field: FormField, fakerInstance: Faker = faker): string {
     }
 
     if (field.type === 'number') {
+      // Check if this number field is actually a postal/zip code
+      const searchText = `${field.name} ${field.id} ${field.placeholder}`.toLowerCase();
+      const isPostalCode = /zip|postal.*code|post.*code|postcode|plz|codigo.*postal|cep|cap/i.test(searchText);
+
+      if (isPostalCode) {
+        // Generate locale-appropriate postal code as number-only string
+        const zipCode = fakerInstance.location.zipCode();
+        // Extract only digits from the zip code
+        const digitsOnly = zipCode.replace(/\D/g, '');
+        return digitsOnly || fakerInstance.number.int({ min: 10000, max: 99999 }).toString();
+      }
+
+      // Regular number field
       const min = field.min ? parseInt(field.min) : 0;
       const max = field.max ? parseInt(field.max) : 100;
       return fakerInstance.number.int({ min, max }).toString();
