@@ -15,6 +15,7 @@ export interface FormField {
 
 export interface FillOptions {
   respectValidation: boolean;
+  fillOptionalFields: boolean;
   locale: string;
   animationSpeed: 'instant' | 'fast' | 'slow';
 }

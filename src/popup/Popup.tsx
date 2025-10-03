@@ -61,6 +61,13 @@ function Popup() {
     await storage.setOptions(newOptions);
   };
 
+  const toggleOptionalFields = async () => {
+    if (!options) return;
+    const newOptions = { ...options, fillOptionalFields: !options.fillOptionalFields };
+    setOptions(newOptions);
+    await storage.setOptions(newOptions);
+  };
+
   if (!options) {
     return (
       <div className="w-80 h-96 flex items-center justify-center">
@@ -120,6 +127,16 @@ function Popup() {
               ))}
             </select>
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={options.fillOptionalFields}
+              onChange={toggleOptionalFields}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-700">Fill optional fields</span>
+          </label>
 
           <label className="flex items-center gap-2 cursor-pointer">
             <input

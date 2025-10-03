@@ -159,7 +159,11 @@ The extension recognizes common field patterns:
 
 ## Settings
 
+- **Fill optional fields** - Choose whether to fill all fields or only required fields (default: all fields)
+  - ✅ **Checked (default)**: Fills all form fields (required + optional)
+  - ☐ **Unchecked**: Fills only fields marked with `required` attribute
 - **Respect field validation** - Toggle to honor/ignore HTML5 validation attributes
+- **Locale** - Select from 36 locales for region-specific data generation
 
 ## Known Limitations
 

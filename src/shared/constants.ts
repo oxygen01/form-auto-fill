@@ -1,5 +1,6 @@
 export const DEFAULT_OPTIONS = {
   respectValidation: true,
+  fillOptionalFields: true, // Default: fill all fields (required + optional)
   locale: 'en_US',
   animationSpeed: 'instant' as const,
 };

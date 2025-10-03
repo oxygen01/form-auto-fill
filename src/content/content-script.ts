@@ -71,30 +71,49 @@ function detectFormFields(): FormField[] {
     'input, select, textarea'
   );
 
+  console.log(`🔍 Scanning page for form fields...`);
+  console.log(`Found ${inputs.length} total input/select/textarea elements`);
+
+  let skippedCount = 0;
+
   inputs.forEach((element) => {
     // Skip hidden, submit, button, and reset inputs
     if (
       element instanceof HTMLInputElement &&
       ['hidden', 'submit', 'button', 'reset', 'file', 'image'].includes(element.type)
     ) {
+      skippedCount++;
+      console.log(`⏭️  Skipped ${element.type} input:`, element.name || element.id || '(no name/id)');
       return;
     }
 
-    fields.push({
+    const isRequired = element.required;
+    const fieldInfo = {
       element,
       type: element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase(),
       name: element.name || '',
       id: element.id || '',
       placeholder: (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) ? element.placeholder || '' : '',
-      required: element.required,
+      required: isRequired,
       pattern: element instanceof HTMLInputElement ? element.pattern : undefined,
       minLength: element instanceof HTMLInputElement ? element.minLength : undefined,
       maxLength: element instanceof HTMLInputElement ? element.maxLength : undefined,
       min: element instanceof HTMLInputElement ? element.min : undefined,
       max: element instanceof HTMLInputElement ? element.max : undefined,
       step: element instanceof HTMLInputElement ? element.step : undefined,
-    });
+    };
+
+    fields.push(fieldInfo);
+
+    console.log(`${isRequired ? '🔴' : '⚪'} Detected field:`,
+      fieldInfo.name || fieldInfo.id || '(no name/id)',
+      `[${fieldInfo.type}]`,
+      isRequired ? 'REQUIRED' : 'optional'
+    );
   });
+
+  console.log(`✅ Total detected: ${fields.length} fields (skipped ${skippedCount})`);
+  console.log(`📊 Required: ${fields.filter(f => f.required).length}, Optional: ${fields.filter(f => !f.required).length}`);
 
   return fields;
 }
@@ -242,13 +261,32 @@ function generateData(field: FormField, fakerInstance: Faker = faker): string {
 // Fill form with random data
 function fillForm(options?: FillOptions) {
   console.log('=== Form Auto-Fill Started ===');
+  console.log('Options received:', options);
 
   const locale = options?.locale || 'en_US';
+  const fillOptionalFields = options?.fillOptionalFields ?? true; // Changed default to true
   const fakerInstance = getFakerInstance(locale);
-  console.log(`Using locale: ${locale}`);
 
-  const fields = detectFormFields();
-  console.log(`Found ${fields.length} form fields`);
+  console.log(`Using locale: ${locale}`);
+  console.log(`Fill optional fields: ${fillOptionalFields}`);
+
+  let fields = detectFormFields();
+  console.log(`Found ${fields.length} total form fields`);
+
+  // Filter fields based on fillOptionalFields option
+  if (!fillOptionalFields) {
+    const originalCount = fields.length;
+    const requiredCount = fields.filter(f => f.required).length;
+    fields = fields.filter(field => field.required);
+    console.log(`Filtering to required fields only: ${fields.length}/${originalCount} fields (${requiredCount} required, ${originalCount - requiredCount} optional)`);
+
+    if (fields.length === 0) {
+      console.warn('⚠️ No required fields found! The form has no fields marked with "required" attribute.');
+      console.warn('💡 Enable "Fill optional fields" option to fill all fields.');
+    }
+  } else {
+    console.log(`Filling all fields (required + optional)`);
+  }
 
   const processedRadioGroups = new Set<string>();
 
@@ -301,6 +339,11 @@ function fillForm(options?: FillOptions) {
   });
 
   console.log('=== Form Auto-Fill Complete ===');
+
+  // Show alert if no fields were filled
+  if (fields.length === 0 && !fillOptionalFields) {
+    alert('⚠️ No required fields found!\n\nThis form has no fields marked as "required".\n\n💡 Tip: Enable "Fill optional fields" checkbox in the extension popup to fill all fields.');
+  }
 }
 
 // Listen for messages from popup
