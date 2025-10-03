@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wand2, Settings, RefreshCw, Globe } from 'lucide-react';
+import { Wand2, RefreshCw, Globe } from 'lucide-react';
 import { storage } from '@/shared/storage';
 import { FillOptions } from '@/shared/types';
 import { SUPPORTED_LOCALES } from '@/shared/constants';
@@ -147,13 +147,6 @@ function Popup() {
             />
             <span className="text-sm text-gray-700">Respect field validation</span>
           </label>
-        </div>
-
-        <div className="border-t pt-4">
-          <button className="w-full btn btn-secondary flex items-center justify-center gap-2">
-            <Settings className="w-4 h-4" />
-            Advanced Settings
-          </button>
         </div>
       </div>
 
