@@ -8,43 +8,83 @@ function Popup() {
   const [options, setOptions] = useState<FillOptions | null>(null);
   const [fieldCount, setFieldCount] = useState<number>(0);
   const [filling, setFilling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refreshFieldCount = async () => {
+    setRefreshing(true);
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) {
+        console.error('No active tab found');
+        setRefreshing(false);
+        return;
+      }
+
+      // Send message and handle response with promise
+      chrome.tabs.sendMessage(
+        tab.id,
+        { type: 'GET_FORM_COUNT' },
+        (response) => {
+          // Clear any errors
+          const error = chrome.runtime.lastError;
+
+          if (error) {
+            console.error('Content script not responding:', error.message);
+            setFieldCount(0);
+          } else if (response?.count !== undefined) {
+            console.log('Form fields detected:', response.count);
+            setFieldCount(response.count);
+          } else {
+            console.warn('No valid response from content script');
+            setFieldCount(0);
+          }
+
+          setTimeout(() => setRefreshing(false), 300);
+        }
+      );
+    } catch (error) {
+      console.error('Error refreshing field count:', error);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     // Load options
     storage.getOptions().then(setOptions);
 
     // Get form field count from active tab
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(
-          tabs[0].id,
-          { type: 'GET_FORM_COUNT' },
-          (response) => {
-            if (response?.count !== undefined) {
-              setFieldCount(response.count);
-            }
-          }
-        );
-      }
-    });
+    refreshFieldCount();
   }, []);
 
   const handleFillForm = async () => {
     setFilling(true);
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(
-          tabs[0].id,
-          { type: 'FILL_FORM', payload: options },
-          () => {
-            setTimeout(() => {
-              setFilling(false);
-            }, 500);
-          }
-        );
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) {
+        console.error('No active tab found');
+        setFilling(false);
+        return;
       }
-    });
+
+      chrome.tabs.sendMessage(
+        tab.id,
+        { type: 'FILL_FORM', payload: options },
+        (_response) => {
+          const error = chrome.runtime.lastError;
+          if (error) {
+            console.error('Error filling form:', error.message);
+          } else {
+            console.log('Form filled successfully');
+          }
+          setTimeout(() => setFilling(false), 500);
+        }
+      );
+    } catch (error) {
+      console.error('Error in handleFillForm:', error);
+      setFilling(false);
+    }
   };
 
   const toggleValidation = async () => {
@@ -79,9 +119,19 @@ function Popup() {
   return (
     <div className="w-80 bg-white">
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 text-white">
-        <div className="flex items-center gap-2">
-          <Wand2 className="w-6 h-6" />
-          <h1 className="text-lg font-semibold">Form Auto-Fill</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wand2 className="w-6 h-6" />
+            <h1 className="text-lg font-semibold">Form Auto-Fill</h1>
+          </div>
+          <button
+            onClick={refreshFieldCount}
+            disabled={refreshing}
+            className="p-1.5 hover:bg-blue-800 rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh form detection"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
         <p className="text-sm text-blue-100 mt-1">
           {fieldCount > 0 ? `${fieldCount} fields detected` : 'No form fields detected'}

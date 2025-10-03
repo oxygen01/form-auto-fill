@@ -2,10 +2,63 @@ import { faker, Faker, allFakers } from '@faker-js/faker';
 import { Message, FormField, FillOptions } from '@/shared/types';
 import { FIELD_PATTERNS } from '@/shared/constants';
 
-// Verify Faker is loaded
-console.log('Form Auto-Fill content script loaded');
-console.log('Faker library loaded:', !!faker);
-console.log('Available locales:', Object.keys(allFakers).length);
+// Track if already initialized to prevent double initialization
+let isInitialized = false;
+
+function init() {
+  if (isInitialized) {
+    console.log('⚠️ Content script already initialized, skipping');
+    return;
+  }
+
+  isInitialized = true;
+
+  // Verify Faker is loaded
+  console.log('✅ Form Auto-Fill content script loaded');
+  console.log('✅ Faker library loaded:', !!faker);
+  console.log('✅ Available locales:', Object.keys(allFakers).length);
+  console.log('✅ Page URL:', window.location.href);
+
+  // Set up message listener
+  setupMessageListener();
+}
+
+// Initialize immediately (top-level execution for direct script loading)
+init();
+
+function setupMessageListener() {
+  // Listen for messages from popup
+  chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
+    console.log('📨 Content script received message:', message);
+
+    try {
+      switch (message.type) {
+        case 'FILL_FORM':
+          console.log('Starting form fill...');
+          fillForm(message.payload);
+          sendResponse({ success: true });
+          break;
+
+        case 'GET_FORM_COUNT':
+          console.log('Getting form field count...');
+          const fields = detectFormFields();
+          console.log(`📊 Sending response: ${fields.length} fields`);
+          sendResponse({ count: fields.length });
+          break;
+
+        default:
+          console.warn('Unknown message type:', message.type);
+          sendResponse({ error: 'Unknown message type' });
+          break;
+      }
+    } catch (error) {
+      console.error('❌ Error handling message:', error);
+      sendResponse({ error: String(error) });
+    }
+
+    return true;
+  });
+}
 
 // Get Faker instance for a specific locale
 function getFakerInstance(locale: string): Faker {
@@ -367,24 +420,8 @@ function fillForm(options?: FillOptions) {
   }
 }
 
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
-  console.log('Content script received message:', message);
-
-  switch (message.type) {
-    case 'FILL_FORM':
-      fillForm(message.payload);
-      sendResponse({ success: true });
-      break;
-
-    case 'GET_FORM_COUNT':
-      const fields = detectFormFields();
-      sendResponse({ count: fields.length });
-      break;
-
-    default:
-      break;
-  }
-
-  return true;
-});
+// Export onExecute for CRXJS loader
+export function onExecute() {
+  console.log('✅ Content script onExecute called by CRXJS');
+  init();
+}
